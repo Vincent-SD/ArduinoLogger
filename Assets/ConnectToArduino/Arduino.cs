@@ -59,6 +59,7 @@ public class Arduino : MonoBehaviour {
     public GameObject restartbutton;
     public Text statustext;
     public Text connectiontext;
+    public Button startbutton;
 
     /* 
     * Arduino Connection Setup
@@ -128,8 +129,10 @@ public class Arduino : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+        //TODO add button to return to previous page when arduino disconnected
         connectiontext = GameObject.Find("ConnectionText").GetComponent<Text>();
         connectToArduino = GameObject.Find("ConnectToArduino").GetComponent<ConnectToArduino>();
+        startbutton = GameObject.Find("StartButton").GetComponent<Button>();
         BaudRate = connectToArduino.sanitizedBaudRate;
         PortName = connectToArduino.sanitizedSerialPort;
         email = connectToArduino.email;
@@ -150,11 +153,14 @@ public class Arduino : MonoBehaviour {
         {
             connectiontext.text = "Arduino is connected";
             connectiontext.color = Color.green;
+            startbutton.interactable = true;
+          
         }
         else
         {
             connectiontext.text = "Arduino is disconnected";
             connectiontext.color = Color.red;
+            startbutton.interactable = false    ;
         }
     }
 
@@ -172,7 +178,6 @@ public class Arduino : MonoBehaviour {
                       {
                           hasStateChanged = true;
                       } 
-                      //callback(DetectArduino());
                   }
                   
               });
