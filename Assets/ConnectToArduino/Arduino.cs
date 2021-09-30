@@ -385,6 +385,7 @@ public class Arduino : MonoBehaviour {
     {
         sceneLeft = true;
         CloseConnection();
+        //unsuscribes all handlers when leaving page
         foreach (var d in NewRawSerialEvent.GetInvocationList())
             NewRawSerialEvent -= (d as NewRawSerialEventHandler);
         SceneManager.LoadSceneAsync(previousPage);
@@ -523,6 +524,7 @@ public class Arduino : MonoBehaviour {
         arduino.DtrEnable = true;
         try
         {
+            returnbutton.interactable = false;
             isLoggingStarted = true;
             arduino.Open();
             System.Threading.Thread.Sleep(1000);
@@ -572,6 +574,7 @@ public class Arduino : MonoBehaviour {
     {
         StopCoroutine(ReadIncomingData());
         receiverState = ReceiverState.Standby;
+        returnbutton.interactable = true;
         isLoggingStarted = false;
         CloseConnection();
     }
