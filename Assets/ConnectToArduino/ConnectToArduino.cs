@@ -8,6 +8,8 @@ using System.IO.Ports;
 using System.Text.RegularExpressions;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using System.Timers;
+
 public class ConnectToArduino : MonoBehaviour
 {
     [SerializeField]
@@ -65,6 +67,7 @@ public class ConnectToArduino : MonoBehaviour
 	private static SerialPort serialport;
 
     private readonly char[] charsToRemoveFromComment = new char[] { ';', ',' };
+    private Timer refreshTimer;
 
     void Awake()
     {
@@ -72,6 +75,9 @@ public class ConnectToArduino : MonoBehaviour
         string[] ports = SerialPort.GetPortNames();
         DisplayAvailablePorts();
         DontDestroyOnLoad (transform.gameObject);
+        refreshTimer = new Timer(5000);
+        refreshTimer.Elapsed += new ElapsedEventHandler(DisplayAvailablePorts);
+        refreshTimer.Start();
     }
 
     
@@ -101,8 +107,19 @@ public class ConnectToArduino : MonoBehaviour
         }
     }
 
+    private void DisplayAvailablePorts(object source, ElapsedEventArgs e)
+    {
+        //run the code in main thread, otherwise the UI will not be updated
+        UnityMainThread.wkr.AddJob(() =>
+        {
+            DisplayAvailablePorts();  
+        });
+        
+    }
+
     private void DisplayAvailablePorts()
     {
+        arduinoDropdown.ClearOptions();
         string[] ports = SerialPort.GetPortNames();
         if (ports.Length > 0)
         {
@@ -119,14 +136,25 @@ public class ConnectToArduino : MonoBehaviour
         }
     }
 
+
+
     public void OnRefreshClick()
     {
-        arduinoDropdown.ClearOptions();
         DisplayAvailablePorts();
     }
 
+
+
+    public void LaunchRefreshTimer()
+    {
+
+    }
+
     public void RedirectToScene() {
-            SceneManager.LoadSceneAsync(redirectScene);
+        refreshTimer.Stop();
+        refreshTimer.Dispose();
+        SceneManager.LoadSceneAsync(redirectScene);
+
     }
 
     private void displayArduinoError() {
