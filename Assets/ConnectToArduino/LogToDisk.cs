@@ -38,10 +38,11 @@ public class LogToDisk : MonoBehaviour
     public string filename = "testlog";
     public string datatype = "csv";
 
+    private LoggingManager loggingManager;
+
     void Start()
     {
-        Arduino.NewHeaderEvent += saveheader;
-
+        loggingManager = GameObject.Find("LoggingManager").GetComponent<LoggingManager>();
     }
 
     public void ShowSaveDialog()
@@ -49,28 +50,39 @@ public class LogToDisk : MonoBehaviour
         path = StandaloneFileBrowser.SaveFilePanel(dialogTitle, "", filename, datatype);
         Debug.Log("save dialog finished");
         filepath = path;
-        LogHeader(headers);
     }
 
-    public void LogHeader(List<string> headers)
-    {
-    
-        if (!File.Exists(filepath))
-        {
-            string headerline = "TimeStamp" + sep + "Email" + sep + "Comment" + sep + "PID" + sep + string.Join(sep, headers.ToArray()).Replace("\n", string.Empty);
-            using (StreamWriter writer = File.AppendText(filepath))
-            {
-                writer.WriteLine(headerline + ";");
-            }
-        }
-    }
-
-    public void saveheader(List<string> listheaders)
-    {
-        headers = listheaders;
-    }
 
     public void Log(Dictionary<string, List<string>> logCollection)
+    {
+        if (string.IsNullOrEmpty(filepath))
+        {
+            Debug.LogError("Filepath was not set!");
+        }
+        loggingManager.SetSaveFullPath(filepath);
+        Debug.Log(logCollection);
+        loggingManager.SetEmail(logCollection["Email"][0]);
+        loggingManager.Log("synch", new Dictionary<string, List<string>>()
+        {
+            {"Timestamp", logCollection["TimeStamp"] },
+            {"Email", logCollection["Email"] },
+            {"Comment", logCollection["Comment"] },
+            {"PID", logCollection["PID"] },
+            {"EDA", logCollection["EDA"] },
+            {"IBI", logCollection["IBI"] },
+            {"RawPulse", logCollection["RawPulse"] },
+            {"Pressure", logCollection["Pressure"] },
+            {"Button", logCollection["Button\r\n"] },
+        });
+        Debug.Log("Data logged to: " + filepath);
+        loggingManager.SaveLog("synch");
+        SendingDoneTitleText.text = "Data saved in " + filepath;
+        SendingDoneButtonText.text = "CSV File Saved";
+        SendingDoneButtonText.color = Color.grey;
+        SaveButton.interactable = false;
+    }
+
+    public void LogOld(Dictionary<string, List<string>> logCollection)
     {
 
         if (string.IsNullOrEmpty(filepath))
