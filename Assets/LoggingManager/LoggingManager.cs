@@ -5,18 +5,13 @@ using System.IO;
 using System;
 using System.Globalization;
 using System.Linq;
+using Assets.LoggingManager;
 
 public enum LogMode {
     Append,
     Overwrite
 }
 
-public class LogCollection {
-    public string label;
-    public int count = 0;
-    public bool saveHeaders = true;
-    public Dictionary<string, Dictionary<int, object>> log = new Dictionary<string, Dictionary<int, object>>();
-}
 
 public class LoggingManager : MonoBehaviour
 {
@@ -83,8 +78,8 @@ public class LoggingManager : MonoBehaviour
         deviceID = SystemInfo.deviceUniqueIdentifier;
     }
 
-    public Dictionary<string, Dictionary<int, object>> GetLog(string collectionLabel) {
-        return new Dictionary<string, Dictionary<int, object>>(collections[collectionLabel].log);
+    public Dictionary<string, List<object>> GetLog(string collectionLabel) {
+        return new Dictionary<string, List<object>>(collections[collectionLabel].log);
     }
 
     public void SaveAllLogs() {
@@ -94,7 +89,7 @@ public class LoggingManager : MonoBehaviour
     }
 
     public void NewFilestamp() {
-        filestamp = GetTimeStamp().Replace('/', '-').Replace(":", "-");
+        filestamp = LogCollection.GetTimeStamp().Replace('/', '-').Replace(":", "-");
 
         if (CreateMetaCollection) {
             GenerateUIDs();
@@ -123,142 +118,44 @@ public class LoggingManager : MonoBehaviour
     }
 
     public void CreateLog(string collectionLabel) {
-        collections.Add(collectionLabel, new LogCollection());
+        collections.Add(collectionLabel, new LogCollection(collectionLabel));
     }
 
-    public void SetupLog(string collectionLabel)
+    public void SetupLog(string collectionLabel, bool newLogs = false)
     {
-        if (!collections.ContainsKey(collectionLabel))
+        if (newLogs)
         {
-            collections.Add(collectionLabel, new LogCollection());
-            collections[collectionLabel].label = collectionLabel;
+            collections.Remove(collectionLabel);
+            collections.Add(collectionLabel, new LogCollection(collectionLabel));
         }
-        if (!collections[collectionLabel].log.ContainsKey("Timestamp"))
+        else if (!collections.ContainsKey(collectionLabel))
         {
-            collections[collectionLabel].log["Timestamp"] = new Dictionary<int, object>();
+            collections.Add(collectionLabel, new LogCollection(collectionLabel));
         }
-        if (!collections[collectionLabel].log.ContainsKey("Framecount"))
-        {
-            collections[collectionLabel].log["Framecount"] = new Dictionary<int, object>();
-        }
-        if (!collections[collectionLabel].log.ContainsKey("SessionID"))
-        {
-            collections[collectionLabel].log["SessionID"] = new Dictionary<int, object>();
-        }
-        if (!collections[collectionLabel].log.ContainsKey("Email"))
-        {
-            collections[collectionLabel].log["Email"] = new Dictionary<int, object>();
-        }
+        collections[collectionLabel].InitLogs();
     }
 
+    //This function has to be called when the logging is terminated.
     public void Log(string collectionLabel, Dictionary<string, List<string>> logData)
     {
-        SetupLog(collectionLabel);
-        foreach (KeyValuePair<string, List<string>> pair in logData)
-        {
-            collections[collectionLabel].count = pair.Value.Count;
-            int i = 0;
-            foreach (string value in pair.Value)
-            {
-                collections[collectionLabel].log[pair.Key][i] = value;
-                i++;
-            }
-           
-        }
-
-        }
-
-        public void Log(string collectionLabel, Dictionary<string, object> logData, LogMode logMode=LogMode.Append) {
-        if (!collections.ContainsKey(collectionLabel)) {
-            collections.Add(collectionLabel, new LogCollection());
-            collections[collectionLabel].label = collectionLabel;
-        }
-
-
-        if (!collections[collectionLabel].log.ContainsKey("Timestamp"))
-        {
-            collections[collectionLabel].log["Timestamp"] = new Dictionary<int, object>();
-        }
-        if (!collections[collectionLabel].log.ContainsKey("Framecount"))
-        {
-            collections[collectionLabel].log["Framecount"] = new Dictionary<int, object>();
-        }
-        if (!collections[collectionLabel].log.ContainsKey("SessionID"))
-        {
-            collections[collectionLabel].log["SessionID"] = new Dictionary<int, object>();
-        }
-        if (!collections[collectionLabel].log.ContainsKey("Email"))
-        {
-            collections[collectionLabel].log["Email"] = new Dictionary<int, object>();
-        }
-
-        foreach (KeyValuePair<string, object> pair in logData) {
-            if (!collections[collectionLabel].log.ContainsKey(pair.Key)) {
-                collections[collectionLabel].log.Add(pair.Key, new Dictionary<int, object>());
-            }
-            int currentIndex = collections[collectionLabel].count;
-            if (logMode == LogMode.Append) {
-                Debug.Log("key : " + pair.Key);
-                Debug.Log("index : " + currentIndex);
-                if (collections[collectionLabel].log[pair.Key].ContainsKey(currentIndex)) {
-                    collections[collectionLabel].count++;
-                    Debug.Log("couille");
-                    currentIndex = collections[collectionLabel].count;
-                }
-            }
-
-            collections[collectionLabel].log["Timestamp"][currentIndex] = GetTimeStamp();
-            collections[collectionLabel].log["Framecount"][currentIndex] = GetFrameCount();
-            collections[collectionLabel].log["SessionID"][currentIndex] = sessionID;
-            collections[collectionLabel].log["Email"][currentIndex] = email;
-            collections[collectionLabel].log[pair.Key][currentIndex] = pair.Value;
-            Debug.Log("count : " + collections[collectionLabel].count);
-        }
-        
+        SetupLog(collectionLabel, true);
+        collections[collectionLabel].AddAllLogs(logData);
     }
 
+    //call this method each time a line is logged
+    public void Log(string collectionLabel, Dictionary<string, object> logData) {
+        collections[collectionLabel].AddLog(logData, sessionID, email);
+    }
+
+    //call this method each time a line is logged
     public void Log(string collectionLabel, string columnLabel, object value, LogMode logMode = LogMode.Append) {
-        if (!collections.ContainsKey(collectionLabel)) {
-            collections.Add(collectionLabel, new LogCollection());
-            collections[collectionLabel].label = collectionLabel;
-        }
-
-        if (!collections[collectionLabel].log.ContainsKey(columnLabel)) {
-            collections[collectionLabel].log.Add(columnLabel, new Dictionary<int, object>());
-
-                if (!collections[collectionLabel].log.ContainsKey("Timestamp")) {
-                    collections[collectionLabel].log["Timestamp"] = new Dictionary<int, object>();
-                }
-                if (!collections[collectionLabel].log.ContainsKey("Framecount")) {
-                    collections[collectionLabel].log["Framecount"] = new Dictionary<int, object>();
-                }
-                if (!collections[collectionLabel].log.ContainsKey("SessionID")) {
-                collections[collectionLabel].log["SessionID"] = new Dictionary<int, object>();
-                }
-                if (!collections[collectionLabel].log.ContainsKey("Email")) {
-                collections[collectionLabel].log["Email"] = new Dictionary<int, object>();
-                }
-        }
-
-        int count = collections[collectionLabel].count;
-        if (logMode == LogMode.Append) {
-            if (collections[collectionLabel].log[columnLabel].ContainsKey(count)) {
-                collections[collectionLabel].count++;
-                count = collections[collectionLabel].count;
-            }
-        }
-
-        collections[collectionLabel].log["Timestamp"][count] = GetTimeStamp();
-        collections[collectionLabel].log["Framecount"][count] = GetFrameCount();
-        collections[collectionLabel].log["SessionID"][count] = sessionID;
-        collections[collectionLabel].log["Email"][count] = email;
-        collections[collectionLabel].log[columnLabel][count] = value;
+        collections[collectionLabel].AddLog(columnLabel, value, sessionID, email);
     }
 
     public void ClearAllLogs() {
         foreach (KeyValuePair<string, LogCollection> pair in collections) {
             foreach (var key in collections[pair.Key].log.Keys.ToList()) {
-                collections[pair.Key].log[key] = new Dictionary<int, object>();
+                collections[pair.Key].log[key] = new List<object>();
             }
             collections[pair.Key].count = 0;
         }
@@ -267,7 +164,7 @@ public class LoggingManager : MonoBehaviour
     public void ClearLog(string collectionLabel) {
         if (collections.ContainsKey(collectionLabel)) {
             foreach (var key in collections[collectionLabel].log.Keys.ToList()) {
-                collections[collectionLabel].log[key] = new Dictionary<int, object>();
+                collections[collectionLabel].log[key] = new List<object>();
             }
             collections[collectionLabel].count = 0;
         } else {
@@ -276,68 +173,13 @@ public class LoggingManager : MonoBehaviour
         }
     }
 
-    // Formats the logs to a CSV row format and saves them. Calls the CSV headers generation beforehand.
-    // If a parameter doesn't have a value for a given row, uses the given value given previously (see 
-    // UpdateHeadersAndDefaults).
     private void SaveToCSV(string label)
     {
         if(!enableCSVSave) return;
-        string headerLine = "";
-        if (collections[label].saveHeaders) {
-            headerLine = GenerateHeaders(collections[label]);
-        }
-        object temp;
-        string filename = collections[label].label;
-        string filePath = saveFullPath == "" ? savePath + "/" + filePrefix + filestamp + filename + fileExtension : saveFullPath;
-        using (var file = new StreamWriter(filePath, true)) {
-            if (collections[label].saveHeaders) {
-                file.WriteLine(headerLine);
-                collections[label].saveHeaders = false;
-            }
-            for (int i = 0; i <= collections[label].count; i++)
-            {
-                Debug.Log(i);
-                string line = "";
-                foreach (KeyValuePair<string, Dictionary<int, object>> log in collections[label].log)
-                {
-                    if (line != "")
-                    {
-                        line += fieldSeperator;
-                    }
-                    
-                    if (log.Value.TryGetValue(i, out temp))
-                    {
-                        
-                        line += ConvertToString(temp);
-                    }
-                    else
-                    {
-                        line += "NULL";
-                    }
-                }
-                file.WriteLine(line);
-            }
-        }
-        Debug.Log( label + " logs with " + collections[label].count+1 + " rows saved to " + savePath);
+        collections[label].SaveToCSV(fieldSeperator, saveFullPath, 
+            savePath, filePrefix, filestamp, fileExtension);
     }
 
-
-
-
-    // Generates the headers in a CSV format and saves them to the CSV file
-    private string GenerateHeaders(LogCollection collection)
-    {
-        string headers = "";
-        foreach (string key in collection.log.Keys)
-        {
-            if (headers != "")
-            {
-                headers += fieldSeperator;
-            }
-            headers += key;
-        }
-        return headers;
-    }
 
     private void SaveToSQL(string label)
     {
@@ -353,7 +195,7 @@ public class LoggingManager : MonoBehaviour
             return;
         }
         
-        connectToMySQL.AddToUploadQueue(collections[label].log, collections[label].label);    
+        //connectToMySQL.AddToUploadQueue(collections[label].log, collections[label].label);    
         connectToMySQL.UploadNow();
     }
 
@@ -398,14 +240,6 @@ public class LoggingManager : MonoBehaviour
         }
     }
 
-    // Returns a time stamp including the milliseconds.
-    private string GetTimeStamp()
-    {
-        return System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff");
-    }
 
-    private string GetFrameCount() {
-        return Time.frameCount == null ? "-1" : Time.frameCount.ToString();
-    }
 
 }

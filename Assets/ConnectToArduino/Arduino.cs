@@ -131,6 +131,7 @@ public class Arduino : MonoBehaviour {
     private bool isConnected;
     private bool hasStateChanged;
     private bool sceneLeft;
+    public LoggingManager LoggingManager { get; set; }
 
 
     // Use this for initialization
@@ -149,6 +150,7 @@ public class Arduino : MonoBehaviour {
         sceneLeft = false;
         UpdateStatus();
         _ = CheckConnectionAsync();
+        LoggingManager = GameObject.Find("LoggingManager").GetComponent<LoggingManager>();
         //OpenPort(); //Open the serial port when the scene is loaded.
     }
 
@@ -264,10 +266,15 @@ public class Arduino : MonoBehaviour {
 
                 // Check that bodyData contains the expected number of columns. 
                 if (bodyData.Length == numberOfColumns) {
+                    Dictionary<string, object> logData = new Dictionary<string, object>();
                     logCollection["TimeStamp"].Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
                     logCollection["Email"].Add(email);
                     logCollection["Comment"].Add(Comment);
                     logCollection["PID"].Add(pid);
+                    logData.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
+                    logData.Add("Email", email);
+                    logData.Add("Comment", Comment);
+                    logData.Add("PID", pid);
                     for (int i = 0; i < bodyData.Length; i++) {
                         string header = headers[i];
                         string sanitizedValue = new string((from c in bodyData[i] where char.IsLetterOrDigit(c) || char.IsPunctuation(c) select c).ToArray());
@@ -275,7 +282,9 @@ public class Arduino : MonoBehaviour {
                             sanitizedValue = "NULL";
                         }
                         logCollection[header].Add(sanitizedValue);
+                        logData.Add(header,sanitizedValue);
                     }
+                    LoggingManager.Log("synch", logData);
                     //When ever new data arrives, the scripts fires an event to any scripts that are subscribed, to let them know there is new data available (e.g. my Arduino Logger script).
                     if (NewDataEvent != null) {   //Check that someone is actually subscribed to the event
                         NewDataEvent(logCollection);     //Fire the event in case someone is subscribed

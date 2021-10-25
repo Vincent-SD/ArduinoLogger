@@ -42,7 +42,8 @@ public class LogToDisk : MonoBehaviour
 
     void Start()
     {
-        loggingManager = GameObject.Find("LoggingManager").GetComponent<LoggingManager>();
+        Arduino arduino = GameObject.Find("Arduino").GetComponent<Arduino>();
+        loggingManager = arduino.LoggingManager;
     }
 
     public void ShowSaveDialog()
@@ -62,7 +63,7 @@ public class LogToDisk : MonoBehaviour
         loggingManager.SetSaveFullPath(filepath);
         Debug.Log(logCollection);
         loggingManager.SetEmail(logCollection["Email"][0]);
-        loggingManager.Log("synch", new Dictionary<string, List<string>>()
+/*        loggingManager.Log("synch", new Dictionary<string, List<string>>()
         {
             {"Timestamp", logCollection["TimeStamp"] },
             {"Email", logCollection["Email"] },
@@ -73,7 +74,7 @@ public class LogToDisk : MonoBehaviour
             {"RawPulse", logCollection["RawPulse"] },
             {"Pressure", logCollection["Pressure"] },
             {"Button", logCollection["Button\r\n"] },
-        });
+        });*/
         Debug.Log("Data logged to: " + filepath);
         loggingManager.SaveLog("synch");
         SendingDoneTitleText.text = "Data saved in " + filepath;
