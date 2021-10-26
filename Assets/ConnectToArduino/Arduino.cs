@@ -125,7 +125,7 @@ public class Arduino : MonoBehaviour {
     public class OnLoggingInterrupted : UnityEvent<string> { }
     public OnLoggingStarted onLoggingInterrupted;
 
-    private ConnectToArduino connectToArduino;
+    public ConnectToArduino ConnectToArduino { get; set; }
 
     private bool isLoggingStarted;
     private bool isConnected;
@@ -137,15 +137,15 @@ public class Arduino : MonoBehaviour {
     // Use this for initialization
     void Start () {
         connectiontext = GameObject.Find("ConnectionText").GetComponent<Text>();
-        connectToArduino = GameObject.Find("ConnectToArduino").GetComponent<ConnectToArduino>();
-        BaudRate = connectToArduino.sanitizedBaudRate;
-        PortName = connectToArduino.sanitizedSerialPort;
-        email = connectToArduino.email;
-        Comment = connectToArduino.comment;
-        pid = connectToArduino.pid;
+        ConnectToArduino = GameObject.Find("ConnectToArduino").GetComponent<ConnectToArduino>();
+        BaudRate = ConnectToArduino.sanitizedBaudRate;
+        PortName = ConnectToArduino.sanitizedSerialPort;
+        email = ConnectToArduino.email;
+        Comment = ConnectToArduino.comment;
+        pid = ConnectToArduino.pid;
         isLoggingStarted = false;
         hasStateChanged = false;
-        serialPort = connectToArduino.serialport;
+        serialPort = ConnectToArduino.serialport;
         isConnected = true;
         sceneLeft = false;
         UpdateStatus();
@@ -198,9 +198,9 @@ public class Arduino : MonoBehaviour {
 
     private bool DetectArduino()
     {
-        if (connectToArduino.OpenConnection())
+        if (ConnectToArduino.OpenConnection())
         {
-            connectToArduino.CloseConnection();
+            ConnectToArduino.CloseConnection();
             return true;
         }
         return false;
@@ -230,6 +230,8 @@ public class Arduino : MonoBehaviour {
                 onLoggingStarted.Invoke(outputLabel);
                 // Initialize the log dictionary
                 logCollection = new Dictionary<string, List<string>>();
+                LoggingManager.CreateLog("synch");
+                LoggingManager.SetEmail(ConnectToArduino.email);
                 Debug.Log("logcollection is created");
 
                 receiverState = ReceiverState.ReadingHeader;					
@@ -268,11 +270,9 @@ public class Arduino : MonoBehaviour {
                 if (bodyData.Length == numberOfColumns) {
                     Dictionary<string, object> logData = new Dictionary<string, object>();
                     logCollection["TimeStamp"].Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
-                    logCollection["Email"].Add(email);
                     logCollection["Comment"].Add(Comment);
                     logCollection["PID"].Add(pid);
                     logData.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
-                    logData.Add("Email", email);
                     logData.Add("Comment", Comment);
                     logData.Add("PID", pid);
                     for (int i = 0; i < bodyData.Length; i++) {
@@ -356,7 +356,7 @@ public class Arduino : MonoBehaviour {
     public void PreviousPage()
     {
         sceneLeft = true;
-        connectToArduino.CloseConnection();
+        ConnectToArduino.CloseConnection();
         //unsuscribes all handlers when leaving page
         foreach (var d in NewRawSerialEvent.GetInvocationList())
             NewRawSerialEvent -= (d as NewRawSerialEventHandler);
@@ -553,6 +553,6 @@ public class Arduino : MonoBehaviour {
         receiverState = ReceiverState.Standby;
         returnbutton.interactable = true;
         isLoggingStarted = false;
-        connectToArduino.CloseConnection();
+        ConnectToArduino.CloseConnection();
     }
 }

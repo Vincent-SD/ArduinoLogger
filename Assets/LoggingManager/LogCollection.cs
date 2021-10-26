@@ -66,10 +66,24 @@ namespace Assets.LoggingManager
             log["Email"].Add(email);
         }
 
+        private void CreateOrAppendToLogs(string columnName, object value)
+        {
+            if (log.TryGetValue(columnName, out List<object> list))
+            {
+                list.Add(value);
+            }
+            else
+            {
+                log[columnName] = new List<object>();
+                log[columnName].Add(value);
+            }
+        }
+
         public void AddLog(string columnLabel,object value, string sessionID, string email)
         {
             LogCommonColumns(sessionID, email);
-            log[columnLabel].Add(value);
+            CreateOrAppendToLogs(columnLabel, value);
+            count++;
         }
 
         public void AddLog(Dictionary<string, object> logData, string sessionID, string email)
@@ -77,8 +91,9 @@ namespace Assets.LoggingManager
             LogCommonColumns(sessionID, email);
             foreach (KeyValuePair<string, object> pair in logData)
             {
-                log[pair.Key].Add(pair.Value);
+                CreateOrAppendToLogs(pair.Key, pair.Value);
             }
+            count++;
         }
 
         // Generates the headers in a CSV format and saves them to the CSV file
@@ -116,8 +131,7 @@ namespace Assets.LoggingManager
                     file.WriteLine(headerLine);
                     saveHeaders = false;
                 }
-                int rowCount = log.ElementAt(0).Value.Count;
-                for (int i = 0; i <= rowCount; i++)
+                for (int i = 0; i < count; i++)
                 {
                     string line = "";
                     foreach (KeyValuePair<string, List<object>> log in log)

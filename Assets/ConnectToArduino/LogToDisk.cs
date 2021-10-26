@@ -42,8 +42,8 @@ public class LogToDisk : MonoBehaviour
 
     void Start()
     {
-        Arduino arduino = GameObject.Find("Arduino").GetComponent<Arduino>();
-        loggingManager = arduino.LoggingManager;
+        arduinoObject = GameObject.Find("Arduino").GetComponent<Arduino>();
+        loggingManager = arduinoObject.LoggingManager;
     }
 
     public void ShowSaveDialog()
@@ -60,9 +60,13 @@ public class LogToDisk : MonoBehaviour
         {
             Debug.LogError("Filepath was not set!");
         }
+
+        if (loggingManager == null)
+        {
+            loggingManager = arduinoObject.LoggingManager;
+        }
         loggingManager.SetSaveFullPath(filepath);
         Debug.Log(logCollection);
-        loggingManager.SetEmail(logCollection["Email"][0]);
 /*        loggingManager.Log("synch", new Dictionary<string, List<string>>()
         {
             {"Timestamp", logCollection["TimeStamp"] },

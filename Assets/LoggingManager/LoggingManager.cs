@@ -118,6 +118,7 @@ public class LoggingManager : MonoBehaviour
     }
 
     public void CreateLog(string collectionLabel) {
+        collections.Remove(collectionLabel);
         collections.Add(collectionLabel, new LogCollection(collectionLabel));
     }
 
