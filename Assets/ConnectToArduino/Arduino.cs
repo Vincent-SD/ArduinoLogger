@@ -230,7 +230,7 @@ public class Arduino : MonoBehaviour {
                 onLoggingStarted.Invoke(outputLabel);
                 // Initialize the log dictionary
                 logCollection = new Dictionary<string, List<string>>();
-                LoggingManager.CreateLog("synch");
+                LoggingManager.CreateLog("synch",true);
                 LoggingManager.SetEmail(ConnectToArduino.email);
                 Debug.Log("logcollection is created");
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -11,18 +12,32 @@ namespace Assets.LoggingManager
     class LogCollection
     {
         public string label;
+        private string sessionID;
+        public bool createLogStringOverTime;
         public int count = 0;
         public bool saveHeaders = true;
-        public Dictionary<string, List<object>> log = new Dictionary<string, List<object>>();
-        bool logsInitiated;
+        public Dictionary<string, List<object>> logs = new Dictionary<string, List<object>>();
+        private bool logsInitiated;
+        public string dataString;
 
-        public LogCollection(string label)
+        public LogCollection(string label, bool createLogStringOverTime = false)
+        {
+            Init(label, Guid.NewGuid().ToString(),createLogStringOverTime);
+        }
+
+        public LogCollection(string label, string sessionID, bool createLogStringOverTime = false)
+        {
+            Init(label, sessionID, createLogStringOverTime);
+        }
+
+        private void Init(string label, string sessionID, bool createLogStringOverTime)
         {
             this.label = label;
             saveHeaders = true;
             logsInitiated = false;
+            this.sessionID = sessionID;
+            this.createLogStringOverTime = createLogStringOverTime;
         }
-
 
         public void InitLogs()
         {
@@ -30,68 +45,108 @@ namespace Assets.LoggingManager
             {
                 return;
             }
-            if (!log.ContainsKey("Timestamp"))
+            if (!logs.ContainsKey("Timestamp"))
             {
-                log["Timestamp"] = new List<object>();
+                logs["Timestamp"] = new List<object>();
             }
-            if (!log.ContainsKey("Framecount"))
+            if (!logs.ContainsKey("Framecount"))
             {
-                log["Framecount"] = new List<object>();
+                logs["Framecount"] = new List<object>();
             }
-            if (!log.ContainsKey("SessionID"))
+            if (!logs.ContainsKey("SessionID"))
             {
-                log["SessionID"] = new List<object>();
+                logs["SessionID"] = new List<object>();
             }
-            if (!log.ContainsKey("Email"))
+            if (!logs.ContainsKey("Email"))
             {
-                log["Email"] = new List<object>();
+                logs["Email"] = new List<object>();
             }
             logsInitiated = true;
         }
 
         public void AddAllLogs(Dictionary<string, List<string>> logData)
         {
-            log = logData.ToDictionary(
+            logs = logData.ToDictionary(
                 x => x.Key.ToString(),
                 x => x.Value.ConvertAll(y => (object)y)
                 );
+            count = logs.ElementAt(0).Value.Count;
         }
 
-        private void LogCommonColumns(string sessionID, string email)
+        private void LogCommonColumns(string email)
         {
             InitLogs();
-            log["Timestamp"].Add(GetTimeStamp());
-            log["Framecount"].Add(GetFrameCount());
-            log["SessionID"].Add(sessionID);
-            log["Email"].Add(email);
+            logs["Timestamp"].Add(GetTimeStamp());
+            logs["Framecount"].Add(GetFrameCount());
+            logs["SessionID"].Add(sessionID);
+            logs["Email"].Add(email);
         }
 
         private void CreateOrAppendToLogs(string columnName, object value)
         {
-            if (log.TryGetValue(columnName, out List<object> list))
+            if (logs.TryGetValue(columnName, out List<object> list))
             {
                 list.Add(value);
             }
             else
             {
-                log[columnName] = new List<object>();
-                log[columnName].Add(value);
+                logs[columnName] = new List<object>
+                {
+                    value
+                };
+                
             }
         }
 
-        public void AddLog(string columnLabel,object value, string sessionID, string email)
+        private void AddLineToDataString(string columnLabel, object value)
         {
-            LogCommonColumns(sessionID, email);
+            if (value != null)
+            {
+                dataString += ConnectToMySQL.ConvertToString(value, columnLabel);
+            }
+            else
+            {
+                dataString += "null";
+            }
+        }
+
+        public void AddLog(string columnLabel,object value, string email)
+        {
+            LogCommonColumns(email);
             CreateOrAppendToLogs(columnLabel, value);
+            if (createLogStringOverTime)
+            {
+                AddLineToDataString(columnLabel,value);
+                dataString += ";";
+            }
             count++;
         }
 
-        public void AddLog(Dictionary<string, object> logData, string sessionID, string email)
+        public void AddLog(Dictionary<string, object> logData, string email)
         {
-            LogCommonColumns(sessionID, email);
-            foreach (KeyValuePair<string, object> pair in logData)
+            LogCommonColumns(email);
+            if (createLogStringOverTime)
             {
-                CreateOrAppendToLogs(pair.Key, pair.Value);
+                int nbElements = logData.Count();
+                int i = 0;
+                foreach (KeyValuePair<string, object> pair in logData)
+                {
+                    i++;
+                    CreateOrAppendToLogs(pair.Key, pair.Value);
+                    AddLineToDataString(pair.Key, pair.Value);
+                    if (i != nbElements)
+                    {
+                        dataString += ",";
+                    }
+                }
+                dataString += ";";
+            }
+            else
+            {
+                foreach (KeyValuePair<string, object> pair in logData)
+                {
+                    CreateOrAppendToLogs(pair.Key, pair.Value);
+                }
             }
             count++;
         }
@@ -100,7 +155,7 @@ namespace Assets.LoggingManager
         private string GenerateHeaders(char fieldSeperator)
         {
             string headers = "";
-            foreach (string key in log.Keys)
+            foreach (string key in logs.Keys)
             {
                 if (headers != "")
                 {
@@ -134,13 +189,12 @@ namespace Assets.LoggingManager
                 for (int i = 0; i < count; i++)
                 {
                     string line = "";
-                    foreach (KeyValuePair<string, List<object>> log in log)
+                    foreach (KeyValuePair<string, List<object>> log in logs)
                     {
                         if (line != "")
                         {
                             line += fieldSeperator;
                         }
-
                         if (log.Value.ElementAtOrDefault(i) != null)
                         {
 
@@ -156,6 +210,8 @@ namespace Assets.LoggingManager
             }
             Debug.Log(label + " logs with " + count + 1 + " rows saved to " + filePath);
         }
+
+
 
         // Returns a time stamp including the milliseconds.
         public static string GetTimeStamp()

@@ -5,6 +5,8 @@ using System.IO;
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Assets.LoggingManager;
 
 public enum LogMode {
@@ -45,7 +47,7 @@ public class LoggingManager : MonoBehaviour
     private string savePath = "";
 
     [SerializeField]
-    private string filePrefix = "log";
+    private string filePrefix = "logs";
 
     [SerializeField]
     private string fileExtension = ".csv";
@@ -79,7 +81,7 @@ public class LoggingManager : MonoBehaviour
     }
 
     public Dictionary<string, List<object>> GetLog(string collectionLabel) {
-        return new Dictionary<string, List<object>>(collections[collectionLabel].log);
+        return new Dictionary<string, List<object>>(collections[collectionLabel].logs);
     }
 
     public void SaveAllLogs() {
@@ -93,8 +95,8 @@ public class LoggingManager : MonoBehaviour
 
         if (CreateMetaCollection) {
             GenerateUIDs();
-            Log("Meta", "SessionID", sessionID, LogMode.Overwrite);
-            Log("Meta", "DeviceID", deviceID, LogMode.Overwrite);
+            Log("Meta", "SessionID", LogMode.Overwrite);
+            Log("Meta", "DeviceID", LogMode.Overwrite);
         }
 
         foreach(KeyValuePair<string, LogCollection> pair in collections) {
@@ -117,9 +119,9 @@ public class LoggingManager : MonoBehaviour
         email = newEmail;
     }
 
-    public void CreateLog(string collectionLabel) {
+    public void CreateLog(string collectionLabel, bool createLogStringOverTime) {
         collections.Remove(collectionLabel);
-        collections.Add(collectionLabel, new LogCollection(collectionLabel));
+        collections.Add(collectionLabel, new LogCollection(collectionLabel,createLogStringOverTime));
     }
 
     public void SetupLog(string collectionLabel, bool newLogs = false)
@@ -136,7 +138,7 @@ public class LoggingManager : MonoBehaviour
         collections[collectionLabel].InitLogs();
     }
 
-    //This function has to be called when the logging is terminated.
+    //This function has to be called when the logging is terminated with all the log data.
     public void Log(string collectionLabel, Dictionary<string, List<string>> logData)
     {
         SetupLog(collectionLabel, true);
@@ -144,19 +146,21 @@ public class LoggingManager : MonoBehaviour
     }
 
     //call this method each time a line is logged
-    public void Log(string collectionLabel, Dictionary<string, object> logData) {
-        collections[collectionLabel].AddLog(logData, sessionID, email);
+    public void Log(string collectionLabel, Dictionary<string, object> logData)
+    {
+        collections[collectionLabel].AddLog(logData, email);
     }
 
     //call this method each time a line is logged
-    public void Log(string collectionLabel, string columnLabel, object value, LogMode logMode = LogMode.Append) {
-        collections[collectionLabel].AddLog(columnLabel, value, sessionID, email);
+    public void Log(string collectionLabel, string columnLabel, object value) {
+        collections[collectionLabel].AddLog(columnLabel, value, email);
     }
+
 
     public void ClearAllLogs() {
         foreach (KeyValuePair<string, LogCollection> pair in collections) {
-            foreach (var key in collections[pair.Key].log.Keys.ToList()) {
-                collections[pair.Key].log[key] = new List<object>();
+            foreach (var key in collections[pair.Key].logs.Keys.ToList()) {
+                collections[pair.Key].logs[key] = new List<object>();
             }
             collections[pair.Key].count = 0;
         }
@@ -164,8 +168,8 @@ public class LoggingManager : MonoBehaviour
 
     public void ClearLog(string collectionLabel) {
         if (collections.ContainsKey(collectionLabel)) {
-            foreach (var key in collections[collectionLabel].log.Keys.ToList()) {
-                collections[collectionLabel].log[key] = new List<object>();
+            foreach (var key in collections[collectionLabel].logs.Keys.ToList()) {
+                collections[collectionLabel].logs[key] = new List<object>();
             }
             collections[collectionLabel].count = 0;
         } else {
@@ -191,12 +195,12 @@ public class LoggingManager : MonoBehaviour
             return;
         }
 
-        if (collections[label].log.Keys.Count == 0) {
+        if (collections[label].logs.Keys.Count == 0) {
             Debug.LogError("Collection " + label + " is empty. Aborting.");
             return;
         }
         
-        //connectToMySQL.AddToUploadQueue(collections[label].log, collections[label].label);    
+        //connectToMySQL.AddToUploadQueue(collections[label].logs, collections[label].label);    
         connectToMySQL.UploadNow();
     }
 

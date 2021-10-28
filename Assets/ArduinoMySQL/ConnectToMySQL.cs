@@ -296,7 +296,7 @@ public class ConnectToMySQL : MonoBehaviour {
 
     // Converts the values of the parameters (in a "object format") to a string, formatting them to the
     // correct format in the process.
-    private string ConvertToString(object arg, string col)
+    public static string ConvertToString(object arg, string col)
     {
 		string processedArg;
         if (arg is float)
