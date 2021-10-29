@@ -66,7 +66,6 @@ public class LogToDisk : MonoBehaviour
             loggingManager = arduinoObject.LoggingManager;
         }
         loggingManager.SetSaveFullPath(filepath);
-        Debug.Log(logCollection);
 /*        loggingManager.Log("synch", new Dictionary<string, List<string>>()
         {
             {"Timestamp", logCollection["TimeStamp"] },

@@ -8,6 +8,7 @@ using UnityEngine.Events;
 using System.Text;
 using System.Linq;
 using UnityEngine.UI;
+using Object = System.Object;
 
 public enum LogUploadStatus {
     Success,
@@ -63,7 +64,7 @@ public class DumpedForm {
 
 public class DataTarget {
 	public TargetCredentials credentials = new TargetCredentials();
-	public List<Dictionary<string, Dictionary<int, object>>> logsToUpload = new List<Dictionary<string, Dictionary<int, object>>>();
+	public List<Dictionary<string, List<object>>> logsToUpload = new List<Dictionary<string, List<object>>>();
 }
 
 public class ConnectToMySQL : MonoBehaviour {
@@ -163,7 +164,7 @@ public class ConnectToMySQL : MonoBehaviour {
 				foreach (KeyValuePair<string, DataTarget> pair in dataTargets) {
 					TargetCredentials creds = pair.Value.credentials;
 					secHash = Md5Sum (creds.dbSecKey);
-					testForm.AddField ("secHashPost", "connectiontest");
+                    testForm.AddField ("secHashPost", "connectiontest");
 					StartCoroutine(ConnectToServer (testForm, creds.dbURL));
 					break;
 				}
@@ -178,7 +179,7 @@ public class ConnectToMySQL : MonoBehaviour {
 
 			if(www.isNetworkError || www.isHttpError) {
 				Debug.LogError(www.error);
-				Debug.LogError(www.downloadHandler.text);				
+                Debug.LogError(www.downloadHandler.text);				
 				yield return new WaitForSeconds(2.0f);
 				retries++;
 				if (retries < 3) {
@@ -215,7 +216,7 @@ public class ConnectToMySQL : MonoBehaviour {
 		}
 	}
 
-	public void AddToUploadQueue(Dictionary<string, Dictionary<int, object>> logCollection, string targetLabel) {
+	public void AddToUploadQueue(Dictionary<string, List<object>> logCollection, string targetLabel) {
 		
 		if (logCollection.Keys.Count == 0) {
 			Debug.LogError("logCollection contain no columns!");
@@ -229,31 +230,35 @@ public class ConnectToMySQL : MonoBehaviour {
 
 		foreach (string key in logCollection.Keys) {
 			if (logCollection[key] == null) {
-				Debug.LogError("LogCollection contains column with no initialized Dictionary<int, object> for column " + key  + ". Please ensure that columns have data before adding to the upload queue.");
+				Debug.LogError("LogCollection contains column with no initialized Dictionary<int, object> for column " + key  +
+                               ". Please ensure that columns have data before adding to the upload queue.");
 				Debug.LogError("Aborting AddToUploadQueue..");
 				return;
 			}
 
-			if (logCollection[key].Keys.Count == 0) {
-				Debug.LogError("Dictionary Present, but no data present in column " + key  + ". Please ensure that columns have data before adding to the upload queue.");
+			if (logCollection[key].Count == 0) {
+				Debug.LogError("Dictionary Present, but no data present in column " + key  +
+                               ". Please ensure that columns have data before adding to the upload queue.");
 				Debug.LogError("Aborting AddToUploadQueue..");
 				return;
 			}
 
-			if (logCollection[key].Keys.Count != logCollection["Email"].Keys.Count)  {
-				Debug.LogWarning("The " + key + " column contain " + logCollection[key].Keys.Count + " rows, but the e-mail column contains " + logCollection["Email"].Keys.Count + "! Empty values will be passed on as NULL values.");
+			if (logCollection[key].Count != logCollection["Email"].Count)  {
+				Debug.LogWarning("The " + key + " column contain " + logCollection[key].Count + 
+                                 " rows, but the e-mail column contains " + logCollection["Email"].Count + 
+                                 "! Empty values will be passed on as NULL values.");
 			}
 		}
 		if (dataTargets.ContainsKey(targetLabel)) {
-			dataTargets[targetLabel].logsToUpload.Add(new Dictionary<string, Dictionary<int, object>>(logCollection));
-			Debug.Log ("Log Collection " + targetLabel + " with " + logCollection.Count + " columns and " + logCollection["Email"].Keys.Count + " rows prepared for upload.");
+			dataTargets[targetLabel].logsToUpload.Add(new Dictionary<string, List<object>>(logCollection));
+			Debug.Log ("Log Collection " + targetLabel + " with " + logCollection.Count + " columns and " + logCollection["Email"].Count + " rows prepared for upload.");
 		} else {
 			Debug.LogError("The targetLabel " + targetLabel + " does not match any of the loaded targets.");
 			Debug.LogError("Aborting AddToUploadQueue..");
 		}
 	}
 
-	public void UploadNow() {
+	public void UploadNow(string dataStr) {
 
 		//if (Time.time - lastUploadTime < timeout) {
 		//	Debug.LogWarning("Don't make frequent calls to MySQL.UploadNow(), uploading is an async operation!");
@@ -268,10 +273,10 @@ public class ConnectToMySQL : MonoBehaviour {
 		if (dataTargets.Keys.Count > 0) {
 			foreach (KeyValuePair<string, DataTarget> pair in dataTargets) {
 				DataTarget target = pair.Value;
-				foreach (Dictionary<string, Dictionary<int, object>> logCollection in target.logsToUpload) {
+				foreach (Dictionary<string, List<object>> logCollection in target.logsToUpload) {
 					Debug.Log ("Attempting to upload logCollection with " + logCollection.Count + " rows.");
 					string dbCols = string.Join(sep,logCollection.Keys.ToArray());
-					string dataString = ParseDataToString(logCollection);
+					string dataString = dataStr == "" ? dataStr : ParseDataToString(logCollection);
 					WWWForm form = PrepareForm(dbCols, dataString, target.credentials);
 
 					// Store data for later in case we need to dump them.
@@ -293,6 +298,8 @@ public class ConnectToMySQL : MonoBehaviour {
 			}
 		}
 	}
+
+
 
     // Converts the values of the parameters (in a "object format") to a string, formatting them to the
     // correct format in the process.
@@ -334,15 +341,15 @@ public class ConnectToMySQL : MonoBehaviour {
 		return processedArg;
     }
 
-	private string ParseDataToString(Dictionary<string, Dictionary<int, object>> logCollection) {
+	private string ParseDataToString(Dictionary<string, List<object>> logCollection) {
 		// Create a string with the data
 		string dataString = "";
 		object temp;
-		for(int i = 0; i < logCollection["Email"].Keys.Count; i++) {
+		for(int i = 0; i < logCollection["Email"].Count; i++) {
 			List<string> row = new List<string>();
 			foreach(string key in logCollection.Keys) {
-				if (logCollection[key].TryGetValue(i, out temp)) {
-					row.Add(ConvertToString(temp, key));
+				if (logCollection[key][i] != null) {
+					row.Add(ConvertToString(logCollection[key][i], key));
 				} else {
 					row.Add("NULL");
 				}
@@ -384,7 +391,7 @@ public class ConnectToMySQL : MonoBehaviour {
 			statusMessage.text = "Submitting logs..";
 			statusMessage.color = defaultColor;
 		}
-		UnityWebRequest www = UnityWebRequest.Post(dbURL, form);
+        UnityWebRequest www = UnityWebRequest.Post(dbURL, form);
 
 		yield return www.SendWebRequest();
 

@@ -121,19 +121,20 @@ public class LoggingManager : MonoBehaviour
 
     public void CreateLog(string collectionLabel, bool createLogStringOverTime) {
         collections.Remove(collectionLabel);
-        collections.Add(collectionLabel, new LogCollection(collectionLabel,createLogStringOverTime));
+        collections.Add(collectionLabel, new LogCollection(collectionLabel,createLogStringOverTime, email));
     }
+
 
     public void SetupLog(string collectionLabel, bool newLogs = false)
     {
         if (newLogs)
         {
             collections.Remove(collectionLabel);
-            collections.Add(collectionLabel, new LogCollection(collectionLabel));
+            collections.Add(collectionLabel, new LogCollection(collectionLabel,false));
         }
         else if (!collections.ContainsKey(collectionLabel))
         {
-            collections.Add(collectionLabel, new LogCollection(collectionLabel));
+            collections.Add(collectionLabel, new LogCollection(collectionLabel,false));
         }
         collections[collectionLabel].InitLogs();
     }
@@ -148,12 +149,12 @@ public class LoggingManager : MonoBehaviour
     //call this method each time a line is logged
     public void Log(string collectionLabel, Dictionary<string, object> logData)
     {
-        collections[collectionLabel].AddLog(logData, email);
+        collections[collectionLabel].AddLog(logData);
     }
 
     //call this method each time a line is logged
     public void Log(string collectionLabel, string columnLabel, object value) {
-        collections[collectionLabel].AddLog(columnLabel, value, email);
+        collections[collectionLabel].AddLog(columnLabel, value);
     }
 
 
@@ -200,8 +201,8 @@ public class LoggingManager : MonoBehaviour
             return;
         }
         
-        //connectToMySQL.AddToUploadQueue(collections[label].logs, collections[label].label);    
-        connectToMySQL.UploadNow();
+        connectToMySQL.AddToUploadQueue(collections[label].logs, collections[label].label);    
+        connectToMySQL.UploadNow(collections[label].dataString);
     }
 
     public string Md5Sum(string strToEncrypt)

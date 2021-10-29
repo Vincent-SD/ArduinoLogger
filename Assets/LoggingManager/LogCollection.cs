@@ -12,6 +12,7 @@ namespace Assets.LoggingManager
     class LogCollection
     {
         public string label;
+        public string email;
         private string sessionID;
         public bool createLogStringOverTime;
         public int count = 0;
@@ -20,19 +21,30 @@ namespace Assets.LoggingManager
         private bool logsInitiated;
         public string dataString;
 
-        public LogCollection(string label, bool createLogStringOverTime = false)
+        public LogCollection(string label, bool createLogStringOverTime, string email)
         {
-            Init(label, Guid.NewGuid().ToString(),createLogStringOverTime);
+            Init(label, email,Guid.NewGuid().ToString(),createLogStringOverTime);
         }
 
-        public LogCollection(string label, string sessionID, bool createLogStringOverTime = false)
+        public LogCollection(string label, string sessionID, bool createLogStringOverTime, string email )
         {
-            Init(label, sessionID, createLogStringOverTime);
+            Init(label, email, sessionID, createLogStringOverTime);
         }
 
-        private void Init(string label, string sessionID, bool createLogStringOverTime)
+        public LogCollection(string label, string sessionID, bool createLogStringOverTime)
+        {
+            Init(label, "anonymous", sessionID, createLogStringOverTime);
+        }
+
+        public LogCollection(string label, bool createLogStringOverTime)
+        {
+            Init(label, "anonymous", Guid.NewGuid().ToString(), createLogStringOverTime);
+        }
+
+        private void Init(string label, string email, string sessionID, bool createLogStringOverTime)
         {
             this.label = label;
+            this.email = email;
             saveHeaders = true;
             logsInitiated = false;
             this.sessionID = sessionID;
@@ -73,7 +85,7 @@ namespace Assets.LoggingManager
             count = logs.ElementAt(0).Value.Count;
         }
 
-        private void LogCommonColumns(string email)
+        private void LogCommonColumns()
         {
             InitLogs();
             logs["Timestamp"].Add(GetTimeStamp());
@@ -110,9 +122,9 @@ namespace Assets.LoggingManager
             }
         }
 
-        public void AddLog(string columnLabel,object value, string email)
+        public void AddLog(string columnLabel,object value)
         {
-            LogCommonColumns(email);
+            LogCommonColumns();
             CreateOrAppendToLogs(columnLabel, value);
             if (createLogStringOverTime)
             {
@@ -122,9 +134,9 @@ namespace Assets.LoggingManager
             count++;
         }
 
-        public void AddLog(Dictionary<string, object> logData, string email)
+        public void AddLog(Dictionary<string, object> logData)
         {
-            LogCommonColumns(email);
+            LogCommonColumns();
             if (createLogStringOverTime)
             {
                 int nbElements = logData.Count();
