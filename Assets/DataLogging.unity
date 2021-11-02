@@ -1184,7 +1184,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.0000026007983, y: 0.00001181542}
+  m_AnchoredPosition: {x: 0.000012657991, y: 0.00001181542}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &471695401
@@ -2352,8 +2352,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2053938094}
   m_HandleRect: {fileID: 2053938093}
   m_Direction: 0
-  m_Value: 0
-  m_Size: 0.9999999
+  m_Value: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2597,7 +2597,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab22e7b89d1224d5cb1ceb845cd6aead, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  builtInCredentials: {fileID: 4900000, guid: dbe9ef754e13dd641a7bff33b9dd6eb3, type: 3}
+  builtInCredentials: []
   statusMessage: {fileID: 295343692}
   errorColor: {r: 0.74509805, g: 0.11372549, b: 0.11372549, a: 1}
   onLogsUploaded:
@@ -4625,6 +4625,57 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1671393164}
   m_CullTransparentMesh: 0
+--- !u!1 &1744812752
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1744812754}
+  - component: {fileID: 1744812753}
+  m_Layer: 0
+  m_Name: LoggingManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1744812753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744812752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8044bb5719035e14ab33f5a950770e12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CreateMetaCollection: 0
+  enableMySQLSave: 0
+  email: anonymous
+  connectToMySQL: {fileID: 0}
+  enableCSVSave: 1
+  savePath: "D:\\Cesi\\2021-2022\\stage \xE9tranger\\taf"
+  filePrefix: log
+  fileExtension: .csv
+--- !u!4 &1744812754
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744812752}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 619.58636, y: 331.27393, z: -1.0935234}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1795528036
 GameObject:
   m_ObjectHideFlags: 0
