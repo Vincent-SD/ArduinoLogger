@@ -261,8 +261,9 @@ public class Arduino : MonoBehaviour {
             // Check for "END" strings
             if (serialInput.Contains ("LOG END")) {
                 StopLogging();
-                
-            } else {
+
+            }
+            else {
                 // Parse data
                 var bodyData = serialInput.Split('\t');
 

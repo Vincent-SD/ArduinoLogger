@@ -20,7 +20,9 @@ public class LogCollection {
 
 public class LoggingManager : MonoBehaviour
 {
+
     private Dictionary<string, string> statelogs = new Dictionary<string, string>();
+    
     private Dictionary<string, Dictionary<int, string>> logs = new Dictionary<string, Dictionary<int, string>>();
 
     // sampleLog[COLUMN NAME][COLUMN NO.] = [OBJECT] (fx a float, int, string, bool)
