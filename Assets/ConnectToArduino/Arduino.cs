@@ -229,7 +229,7 @@ public class Arduino : MonoBehaviour {
                 ParseDataArguments(serialInput);
                 onLoggingStarted.Invoke(outputLabel);
                 // Initialize the log dictionary
-                logCollection = new Dictionary<string, List<string>>();
+                List<string> headers = new List<string>();
                 Debug.Log("logcollection is created");
 
                 receiverState = ReceiverState.ReadingHeader;					
@@ -237,20 +237,20 @@ public class Arduino : MonoBehaviour {
         } else if (receiverState == ReceiverState.ReadingHeader) {
             // Parse header
             timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff");
-            headers = new List<string>();				
+            List<string> headersList = new List<string>();
             headers = serialInput.Split('\t').ToList();
             if (NewHeaderEvent != null)   //Check that someone is actually subscribed to the event
                 NewHeaderEvent(headers);     //Fire the event in case someone is subscribed  
-            logCollection.Add("TimeStamp", new List<string>());          
-            logCollection.Add("Email", new List<string>());
-            logCollection.Add("Comment", new List<string>());
-            logCollection.Add("PID", new List<string>());
-            LoggingManager.CreateLog("synch");
+            headersList.Add("TimeStamp");
+            headersList.Add("Email");
+            headersList.Add("Comment");
+            headersList.Add("PID");
             // Check that header contains the expected number of columns. 
             if (headers.Count == numberOfColumns) {
                 foreach (var header in headers) {
-                    logCollection.Add(header, new List<string>());
+                    headersList.Add(header);
                 }
+                LoggingManager.CreateLog("synch", headers);
                 receiverState = ReceiverState.ReadingData;
             } else {
                 // Otherwise error out and go to Standby Mode.
@@ -261,7 +261,6 @@ public class Arduino : MonoBehaviour {
             // Check for "END" strings
             if (serialInput.Contains ("LOG END")) {
                 StopLogging();
-
             }
             else {
                 // Parse data
@@ -270,16 +269,12 @@ public class Arduino : MonoBehaviour {
                 // Check that bodyData contains the expected number of columns. 
                 if (bodyData.Length == numberOfColumns)
                 {
-                    Dictionary<string, object> logs = new Dictionary<string, object>();
-                    logCollection["TimeStamp"].Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
-                    logCollection["Email"].Add(email);
-                    logCollection["Comment"].Add(Comment);
-                    logCollection["PID"].Add(pid);
+                    Dictionary<string, object> currentLogs = new Dictionary<string, object>();
 
-                    logs.Add("TimeStamp",DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
-                    logs.Add("Email",email);
-                    logs.Add("Comment",Comment);
-                    logs.Add("PID",pid);
+                    currentLogs.Add("TimeStamp",DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
+                    currentLogs.Add("Email",email);
+                    currentLogs.Add("Comment",Comment);
+                    currentLogs.Add("PID",pid);
 
                     for (int i = 0; i < bodyData.Length; i++) {
                         string header = headers[i];
@@ -288,9 +283,9 @@ public class Arduino : MonoBehaviour {
                             sanitizedValue = "NULL";
                         }
                         logCollection[header].Add(sanitizedValue);
-                        logs.Add(header,sanitizedValue);
+                        currentLogs.Add(header,sanitizedValue);
                     }
-                    LoggingManager.Log("synch",logs);
+                    LoggingManager.Log("synch",currentLogs);
                     //When ever new data arrives, the scripts fires an event to any scripts that are subscribed, to let them know there is new data available (e.g. my Arduino Logger script).
                     if (NewDataEvent != null) {   //Check that someone is actually subscribed to the event
                         NewDataEvent(logCollection);     //Fire the event in case someone is subscribed

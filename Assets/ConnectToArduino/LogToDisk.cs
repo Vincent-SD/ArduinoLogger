@@ -38,10 +38,12 @@ public class LogToDisk : MonoBehaviour
     public string filename = "testlog";
     public string datatype = "csv";
 
+    private LoggingManager loggingManager;
+
     void Start()
     {
-        Arduino.NewHeaderEvent += saveheader;
         arduinoObject = GameObject.Find("Arduino").GetComponent<Arduino>();
+        loggingManager = arduinoObject.LoggingManager;
     }
 
     public void ShowSaveDialog()
@@ -49,64 +51,17 @@ public class LogToDisk : MonoBehaviour
         path = StandaloneFileBrowser.SaveFilePanel(dialogTitle, "", filename, datatype);
         Debug.Log("save dialog finished");
         filepath = path;
-        LogHeader(headers);
     }
 
-    public void LogHeader(List<string> headers)
-    {
-    
-        if (!File.Exists(filepath))
-        {
-            string headerline = "TimeStamp" + sep + "Email" + sep + "Comment" + sep + "PID" + sep + string.Join(sep, headers.ToArray()).Replace("\n", string.Empty);
-            using (StreamWriter writer = File.AppendText(filepath))
-            {
-                writer.WriteLine(headerline + ";");
-            }
-        }
-    }
-
-    public void saveheader(List<string> listheaders)
-    {
-        headers = listheaders;
-    }
 
     public void Log(Dictionary<string, List<string>> logCollection)
     {
 
-        if (string.IsNullOrEmpty(filepath))
-        {
-            Debug.LogError("Filepath was not set!");
-        }
-
-        //if (!File.Exists(filepath))
+        //if (string.IsNullOrEmpty(filepath))
         //{
-        //    //Debug.LogWarning("Overwriting CSV file: " + filepath);
-        //    //File.Delete(filepath);
-        //    string[] keys = new string[logCollection.Keys.Count];
-        //    logCollection.Keys.CopyTo(keys, 0);
-        //    string dbCols = string.Join(sep, keys).Replace("\n", string.Empty);
-
-        //    using (StreamWriter writer = File.AppendText(filepath))
-        //    {
-        //        writer.WriteLine(dbCols);
-        //    }
+        //    Debug.LogError("Filepath was not set!");
         //}
 
-
-        //List<string> dataString = new List<string>();
-        //// Create a string with the data
-        //using (StreamWriter writer = File.AppendText(filepath))
-        //{
-        //    for (int i = 0; i < logCollection["Email"].Count; i++)
-        //    {
-        //        List<string> row = new List<string>();
-        //        foreach (string key in logCollection.Keys)
-        //        {
-        //            row.Add(logCollection[key][i]);
-        //        }
-        //        writer.WriteLine((string.Join(sep, row.ToArray()) + sep).Replace("\n", string.Empty));
-        //    }
-        //}
         arduinoObject.LoggingManager.SaveLog("synch");
         Debug.Log("Data logged to: " + filepath);
         SendingDoneTitleText.text = "Data saved in " + filepath;

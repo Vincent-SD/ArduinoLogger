@@ -4659,7 +4659,7 @@ MonoBehaviour:
   email: anonymous
   connectToMySQL: {fileID: 0}
   enableCSVSave: 1
-  savePath: "D:\\Cesi\\2021-2022\\stage \xE9tranger\\taf"
+  savePath: D:\Documents\XD
   filePrefix: log
   fileExtension: .csv
 --- !u!4 &1744812754

@@ -23,7 +23,7 @@ public class WriteToCSV : MonoBehaviour
     public WriteToCSV(LogStore logStore, string savePath, string filePrefix, string fileExtension)
     {
         this.fileName = filePrefix + "_" +
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff") + fileExtension;
+                        DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_ffff") + fileExtension;
         Init(logStore, savePath);
     }
 
@@ -41,33 +41,42 @@ public class WriteToCSV : MonoBehaviour
 
     private void Init(LogStore logStore, string path)
     {
-        this.savePath = path == "" ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : path;
-        this.filePath = path + "/" + fileName;
+       this.savePath = path == "" ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : path;
+       this.filePath = Path.Combine(savePath, fileName);
+      //  this.filePath = savePath + "/" + fileName;
         this.LogStore = logStore;
     }
 
 
     public void WriteAll()
     {
+        Debug.Log(filePath);
         string headers = LogStore.GenerateHeaders();
         string dataString = LogStore.ExportAll<string>();
-        using var file = new StreamWriter(filePath, true);
-        file.WriteLine(headers);
-        file.Write(dataString);
+        Debug.Log(dataString);
+        using (var file = new StreamWriter(filePath, true))
+        {
+            file.WriteLine(headers);
+            file.Write(dataString);
+        }
     }
 
     public void WriteHeaders()
     {
-        using var file = new StreamWriter(filePath, true);
-        file.WriteLine(LogStore.GenerateHeaders());
+        using (var file = new StreamWriter(filePath, true))
+        {
+            file.WriteLine(LogStore.GenerateHeaders());
+        }
     }
 
     public void WriteLine(string line, WriteMode writeMode = WriteMode.Append)
     {
         if (writeMode == WriteMode.Append)
         {
-            using var file = new StreamWriter(filePath, true);
-            file.Write(line);
+            using (var file = new StreamWriter(filePath, true))
+            {
+                file.Write(line);
+            }
         }
     }
 
