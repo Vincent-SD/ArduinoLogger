@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom;
 using System.Collections.Generic;
+using System.Text;
 using Boo.Lang.Runtime;
 using UnityEngine;
 
@@ -15,14 +16,14 @@ public class LogStore : MonoBehaviour
 {
 
     private Dictionary<string, List<string>> logs;
-    private string logString;
+    private StringBuilder logString;
 
     private LogType logType;
     private bool logCommonColumns;
 
     private int nbLines;
     private bool createStringOverTime;
-    private string currentLineLogged;
+    private StringBuilder currentLineLogged;
     private const string fieldSeparator = ";";
     private const string lineSeperator = "\n";
     private string email;
@@ -45,8 +46,8 @@ public class LogStore : MonoBehaviour
         LogType logType, bool logCommonColumns)
     {
         logs = new Dictionary<string, List<string>>();
-        logString = "";
-        currentLineLogged = "";
+        logString = new StringBuilder();
+        currentLineLogged = new StringBuilder();
         this.createStringOverTime = createStringOverTime;
         this.email = email;
         SessionId = sessionID;
@@ -66,37 +67,26 @@ public class LogStore : MonoBehaviour
         }
     }
 
-    public void AddColumns(List<string> columns)
-    {
-        columns.ForEach(AddColumn);
-    }
-
-    public void AddColumn(string column)
-    {
-        if (!logs.ContainsKey(column))
-        {
-            logs.Add(column, new List<string>());
-        }
-    }
 
     public void Add(string column, object data)
     {
+  
         string dataStr = ConvertToString(data);
         if (logs.TryGetValue(column, out List<string> list))
         {
             list.Add(dataStr);
         }
         else
-        {
+        { 
             logs.Add(column, new List<string>());
             logs[column].Add(dataStr);
         }
 
         if (currentLineLogged.Length != 0)
         {
-            currentLineLogged += fieldSeparator;
+            currentLineLogged.Append(fieldSeparator);
         }
-        currentLineLogged += dataStr;
+        currentLineLogged.Append(dataStr);
     }
 
     private void AddCommonColumns()
@@ -145,17 +135,24 @@ public class LogStore : MonoBehaviour
 
         if (createStringOverTime)
         {
-            currentLineLogged += (timeStamp + fieldSeparator + frameCount +
-                                  fieldSeparator + SessionId + fieldSeparator + email);
+            if (logType == LogType.Normal && logCommonColumns)
+            {
+                currentLineLogged.Insert(0, timeStamp + fieldSeparator + frameCount +
+                                            fieldSeparator + SessionId + fieldSeparator + email + fieldSeparator);
+            }
+            else if (logType == LogType.Meta)
+            {
+                currentLineLogged.Insert(0, SessionId + fieldSeparator + email + fieldSeparator);
+            }
         }
     }
 
     public void TerminateRow()
     {
         AddCommonColumns();
-        currentLineLogged += lineSeperator;
-        logString += currentLineLogged;
-        currentLineLogged = "";
+        currentLineLogged.Append(lineSeperator);
+        logString.Append(currentLineLogged);
+        currentLineLogged.Clear();
         nbLines++;
     }
 
@@ -163,7 +160,7 @@ public class LogStore : MonoBehaviour
     public void Clear()
     {
         logs.Clear();
-        logString = "";
+        logString.Clear();
         nbLines = 0;
     }
 
@@ -186,23 +183,23 @@ public class LogStore : MonoBehaviour
     {
         if (!createStringOverTime)
         {
-            logString = "";
+            logString.Clear();
             for (int i = 0; i < nbLines; i++)
             {
                 string line = "";
-                foreach (var pair in logs)
+                foreach (string key in logs.Keys)
                 {
-                    if (line.Length == 0)
+                    if (line != "")
                     {
                         line += fieldSeparator;
                     }
-                    line += pair.Value[i];
+                    line += logs[key][i];
                 }
 
-                logString += (line + lineSeperator);
+                logString.Append(line + lineSeperator);
             }
         }
-        return logString;
+        return logString.ToString();
     }
 
     public string GenerateHeaders()

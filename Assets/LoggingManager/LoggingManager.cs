@@ -105,10 +105,6 @@ public class LoggingManager : MonoBehaviour
         logsList.Add(collectionLabel, new LogStore(email,true));
     }
 
-    public void CreateLog(string collectionLabel, List<string> headers)
-    {
-        logsList.Add(collectionLabel, new LogStore(email, true));
-    }
 
     public void Log(string collectionLabel, Dictionary<string, object> logData, LogMode logMode=LogMode.Append) {
         if (!logsList.ContainsKey(collectionLabel)) {

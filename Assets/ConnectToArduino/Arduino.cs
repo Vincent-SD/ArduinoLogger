@@ -241,8 +241,6 @@ public class Arduino : MonoBehaviour {
             headers = serialInput.Split('\t').ToList();
             if (NewHeaderEvent != null)   //Check that someone is actually subscribed to the event
                 NewHeaderEvent(headers);     //Fire the event in case someone is subscribed  
-            headersList.Add("TimeStamp");
-            headersList.Add("Email");
             headersList.Add("Comment");
             headersList.Add("PID");
             // Check that header contains the expected number of columns. 
@@ -250,7 +248,7 @@ public class Arduino : MonoBehaviour {
                 foreach (var header in headers) {
                     headersList.Add(header);
                 }
-                LoggingManager.CreateLog("synch", headers);
+                LoggingManager.CreateLog("synch");
                 receiverState = ReceiverState.ReadingData;
             } else {
                 // Otherwise error out and go to Standby Mode.
@@ -271,18 +269,17 @@ public class Arduino : MonoBehaviour {
                 {
                     Dictionary<string, object> currentLogs = new Dictionary<string, object>();
 
-                    currentLogs.Add("TimeStamp",DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
-                    currentLogs.Add("Email",email);
                     currentLogs.Add("Comment",Comment);
                     currentLogs.Add("PID",pid);
 
                     for (int i = 0; i < bodyData.Length; i++) {
                         string header = headers[i];
+                        header = header.Replace("\n", "");
+                        header = header.Replace("\r", "");
                         string sanitizedValue = new string((from c in bodyData[i] where char.IsLetterOrDigit(c) || char.IsPunctuation(c) select c).ToArray());
                         if (sanitizedValue == "NA") {
                             sanitizedValue = "NULL";
                         }
-                        logCollection[header].Add(sanitizedValue);
                         currentLogs.Add(header,sanitizedValue);
                     }
                     LoggingManager.Log("synch",currentLogs);
