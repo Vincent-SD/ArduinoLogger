@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using System.Linq;
 using UnityEngine.UI;
 using UnityEditor;
 using SFB;
@@ -48,9 +49,10 @@ public class LogToDisk : MonoBehaviour
 
     public void ShowSaveDialog()
     {
-        path = StandaloneFileBrowser.SaveFilePanel(dialogTitle, "", filename, datatype);
+        path = StandaloneFileBrowser.OpenFolderPanel(dialogTitle, "",false).First();
         Debug.Log("save dialog finished");
         filepath = path;
+        arduinoObject.LoggingManager.SetSavePath(path);
     }
 
 
@@ -61,8 +63,8 @@ public class LogToDisk : MonoBehaviour
         //{
         //    Debug.LogError("Filepath was not set!");
         //}
-
         arduinoObject.LoggingManager.SaveLog("synch");
+        arduinoObject.LoggingManager.SaveLog("Meta");
         Debug.Log("Data logged to: " + filepath);
         SendingDoneTitleText.text = "Data saved in " + filepath;
         SendingDoneButtonText.text = "CSV File Saved";

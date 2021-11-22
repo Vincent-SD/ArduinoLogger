@@ -22,7 +22,7 @@ public class WriteToCSV : MonoBehaviour
 
     public WriteToCSV(LogStore logStore, string savePath, string filePrefix, string fileExtension)
     {
-        this.fileName = filePrefix + "_" +
+        this.fileName = filePrefix + "_" + logStore.Label + "_" +
                         DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_ffff") + fileExtension;
         Init(logStore, savePath);
     }
@@ -43,17 +43,14 @@ public class WriteToCSV : MonoBehaviour
     {
        this.savePath = path == "" ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : path;
        this.filePath = Path.Combine(savePath, fileName);
-      //  this.filePath = savePath + "/" + fileName;
-        this.LogStore = logStore;
+       this.LogStore = logStore;
     }
 
 
     public void WriteAll()
     {
-        Debug.Log(filePath);
         string headers = LogStore.GenerateHeaders();
         string dataString = LogStore.ExportAll<string>();
-        Debug.Log(dataString);
         using (var file = new StreamWriter(filePath, true))
         {
             file.WriteLine(headers);

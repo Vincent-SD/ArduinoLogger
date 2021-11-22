@@ -228,27 +228,28 @@ public class Arduino : MonoBehaviour {
                 // Parse Reported Column and Separator
                 ParseDataArguments(serialInput);
                 onLoggingStarted.Invoke(outputLabel);
-                // Initialize the log dictionary
-                List<string> headers = new List<string>();
-                Debug.Log("logcollection is created");
-
                 receiverState = ReceiverState.ReadingHeader;					
             }
         } else if (receiverState == ReceiverState.ReadingHeader) {
             // Parse header
             timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff");
-            List<string> headersList = new List<string>();
+            //List<string> headersList = new List<string>();
             headers = serialInput.Split('\t').ToList();
             if (NewHeaderEvent != null)   //Check that someone is actually subscribed to the event
                 NewHeaderEvent(headers);     //Fire the event in case someone is subscribed  
-            headersList.Add("Comment");
-            headersList.Add("PID");
             // Check that header contains the expected number of columns. 
             if (headers.Count == numberOfColumns) {
-                foreach (var header in headers) {
-                    headersList.Add(header);
-                }
+                //foreach (var header in headers) {
+                //    headersList.Add(header);
+                //}
+                LoggingManager.DeleteAllLogs();
                 LoggingManager.CreateLog("synch");
+                LoggingManager.Log("Meta", new Dictionary<string, object>()
+                {
+                    {"Email", email},
+                    {"PID", pid},
+                    {"Comment", Comment},
+                });
                 receiverState = ReceiverState.ReadingData;
             } else {
                 // Otherwise error out and go to Standby Mode.

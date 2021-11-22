@@ -570,19 +570,19 @@ public class ConnectToMySQL : MonoBehaviour {
 		Debug.Log(credentialFiles.Length);
 		if (credentialFiles.Length > 0) {
 			foreach  (var filepath in credentialFiles) {
-			Debug.Log("Loading credentials from: " + filepath);
-			string line;
-			string json = "";
-			using (StreamReader reader = new StreamReader(filepath)) {
-				while((line = reader.ReadLine()) != null)  
-				{  
-					json += line;
-				}
-			}
+                Debug.Log("Loading credentials from: " + filepath);
+                string line;
+                string json = "";
+                using (StreamReader reader = new StreamReader(filepath)) {
+                    while((line = reader.ReadLine()) != null)  
+                    {  
+                        json += line;
+                    }
+                }
 
-			DataTarget target = new DataTarget();
-			target.credentials = TargetCredentials.CreateFromJSON(json);
-			dataTargets.Add(target.credentials.label, target);
+                DataTarget target = new DataTarget();
+                target.credentials = TargetCredentials.CreateFromJSON(json);
+                dataTargets.Add(target.credentials.label, target);
 			}
 		} else {
 			mysqlCred = Instantiate(Resources.Load("MySQLAuthCanvas", typeof(GameObject))) as GameObject;

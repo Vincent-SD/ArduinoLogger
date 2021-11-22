@@ -17,6 +17,7 @@ public class LogStore : MonoBehaviour
 
     private Dictionary<string, List<string>> logs;
     private StringBuilder logString;
+    public string Label { get; set; }
 
     private LogType logType;
     private bool logCommonColumns;
@@ -30,21 +31,22 @@ public class LogStore : MonoBehaviour
     public string SessionId { get; set; }
 
 
-    public LogStore(string email, bool createStringOverTime,
+    public LogStore(string label, string email, bool createStringOverTime,
         LogType logType = LogType.Normal, bool logCommonColumns = true)
     {
-        Init(email, Guid.NewGuid().ToString(), createStringOverTime, logType, logCommonColumns);
+        Init(label, email, Guid.NewGuid().ToString(), createStringOverTime, logType, logCommonColumns);
     }
 
-    public LogStore(string email, string sessionID, bool createStringOverTime,
+    public LogStore(string label, string email, string sessionID, bool createStringOverTime,
         LogType logType = LogType.Normal, bool logCommonColumns = true)
     {
-        Init(email, sessionID, createStringOverTime, logType, logCommonColumns);
+        Init(label, email, sessionID, createStringOverTime, logType, logCommonColumns);
     }
 
-    private void Init(string email, string sessionID, bool createStringOverTime,
+    private void Init(string label, string email, string sessionID, bool createStringOverTime,
         LogType logType, bool logCommonColumns)
     {
+        this.Label = label;
         logs = new Dictionary<string, List<string>>();
         logString = new StringBuilder();
         currentLineLogged = new StringBuilder();
@@ -82,11 +84,14 @@ public class LogStore : MonoBehaviour
             logs[column].Add(dataStr);
         }
 
-        if (currentLineLogged.Length != 0)
+        if (createStringOverTime)
         {
-            currentLineLogged.Append(fieldSeparator);
+            if (currentLineLogged.Length != 0)
+            {
+                currentLineLogged.Append(fieldSeparator);
+            }
+            currentLineLogged.Append(dataStr);
         }
-        currentLineLogged.Append(dataStr);
     }
 
     private void AddCommonColumns()
@@ -214,6 +219,11 @@ public class LogStore : MonoBehaviour
             headers += key;
         }
         return headers;
+    }
+
+    public LogStore CreateAssociatedMetaLog()
+    {
+        return new LogStore("Meta", email, createStringOverTime, LogType.Meta, false);
     }
 
     // Converts the values of the parameters (in a "object format") to a string, formatting them to the

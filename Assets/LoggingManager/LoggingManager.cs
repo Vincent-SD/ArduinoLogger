@@ -35,6 +35,10 @@ public class LoggingManager : MonoBehaviour
     [SerializeField]
     private bool enableCSVSave = true;
 
+    [Header("Log string Settings")]
+    [SerializeField]
+    private bool logStringOverTime = true;
+
     [Tooltip("If save path is empty, it defaults to My Documents.")]
     [SerializeField]
     private string savePath = "";
@@ -61,17 +65,17 @@ public class LoggingManager : MonoBehaviour
         }
     }
 
+    public void SetSavePath(string path)
+    {
+        this.savePath = path;
+    }
+
     public void GenerateUIDs() {
         sessionID = Md5Sum(System.DateTime.Now.ToString(SystemInfo.deviceUniqueIdentifier + "yyyy:MM:dd:HH:mm:ss.ffff").Replace(" ", "").Replace("/", "").Replace(":", ""));
         deviceID = SystemInfo.deviceUniqueIdentifier;
     }
 
-    public void SaveAllLogs() {
-        foreach(KeyValuePair<string, LogStore> pair in logsList) {
-            SaveLog(pair.Key);
-        }
-    }
-
+ 
     public void NewFilestamp() {
        // filestamp = GetTimeStamp().Replace('/', '-').Replace(":", "-");
 
@@ -80,10 +84,6 @@ public class LoggingManager : MonoBehaviour
             Log("Meta", "SessionID", sessionID, LogMode.Overwrite);
             Log("Meta", "DeviceID", deviceID, LogMode.Overwrite);
         }
-
-        //foreach(KeyValuePair<string, LogStore> pair in logsList) {
-        //    pair.Value.saveHeaders = true;
-        //}
     }
 
     public void SaveLog(string collectionLabel) {
@@ -97,18 +97,36 @@ public class LoggingManager : MonoBehaviour
         }
     }
 
+    public void SaveAllLogs()
+    {
+        foreach (KeyValuePair<string, LogStore> pair in logsList)
+        {
+            SaveLog(pair.Key);
+        }
+    }
+
+
     public void SetEmail(string newEmail) {
         email = newEmail;
     }
 
-    public void CreateLog(string collectionLabel) {
-        logsList.Add(collectionLabel, new LogStore(email,true));
+    public void CreateLog(string collectionLabel)
+    {
+        LogStore logStore = new LogStore(collectionLabel, email, sessionID, logStringOverTime);
+        logsList.Add(collectionLabel, logStore);
+        if (CreateMetaCollection)
+        {
+            LogStore metaLog = logStore.CreateAssociatedMetaLog();
+            logsList.Add("Meta",metaLog);
+            metaLog.Add("SessionID", sessionID);
+            metaLog.Add("DeviceID", deviceID);
+        }
     }
 
 
     public void Log(string collectionLabel, Dictionary<string, object> logData, LogMode logMode=LogMode.Append) {
         if (!logsList.ContainsKey(collectionLabel)) {
-            logsList.Add(collectionLabel, new LogStore(email,true));
+            logsList.Add(collectionLabel, new LogStore(collectionLabel, email,sessionID,logStringOverTime));
         }
 
         LogStore logStore = logsList[collectionLabel];
@@ -123,7 +141,7 @@ public class LoggingManager : MonoBehaviour
     public void Log(string collectionLabel, string columnLabel, object value, LogMode logMode = LogMode.Append) {
         if (!logsList.ContainsKey(collectionLabel))
         {
-            logsList.Add(collectionLabel, new LogStore(email, true));
+            logsList.Add(collectionLabel, new LogStore(collectionLabel, email, sessionID, logStringOverTime));
         }
         LogStore logStore = logsList[collectionLabel];
         logStore.Add(columnLabel, value);
@@ -141,7 +159,27 @@ public class LoggingManager : MonoBehaviour
             logsList[collectionLabel].Clear();
         } else {
             Debug.LogError("Collection " + collectionLabel + " does not exist.");
-            return;
+        }
+    }
+
+    public void DeleteLog(string collectionLabel)
+    {
+        if (logsList.ContainsKey(collectionLabel))
+        {
+            logsList.Remove(collectionLabel);
+        }
+        else
+        {
+            Debug.LogError("Collection " + collectionLabel + " does not exist.");
+        }
+    }
+
+
+    public void DeleteAllLogs()
+    {
+        foreach (var keyValuePair in logsList)
+        {
+            logsList.Remove(keyValuePair.Key);
         }
     }
 
