@@ -4654,7 +4654,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8044bb5719035e14ab33f5a950770e12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CreateMetaCollection: 0
+  CreateMetaCollection: 1
   enableMySQLSave: 0
   email: anonymous
   connectToMySQL: {fileID: 0}

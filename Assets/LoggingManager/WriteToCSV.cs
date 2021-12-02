@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public enum WriteMode
 {
@@ -49,13 +52,34 @@ public class WriteToCSV : MonoBehaviour
 
     public void WriteAll()
     {
-        string headers = LogStore.GenerateHeaders();
-        string dataString = LogStore.ExportAll<string>();
-        using (var file = new StreamWriter(filePath, true))
+        new Thread(() =>
         {
-            file.WriteLine(headers);
-            file.Write(dataString);
-        }
+            Stopwatch exportToStringStopwatch = new Stopwatch();
+            exportToStringStopwatch.Start();
+
+            string dataString = LogStore.ExportAll<string>();
+
+            exportToStringStopwatch.Stop();
+            TimeSpan exportToStringTs = exportToStringStopwatch.Elapsed;
+            string exportToStringElapsedTime = String.Format("{0:00}:{1:0000}",
+                exportToStringTs.Seconds, exportToStringTs.Milliseconds);
+            Debug.Log(LogStore.Label + " string exported in " + exportToStringElapsedTime);
+
+            string headers = LogStore.GenerateHeaders();
+
+            Stopwatch writeStopwatch = new Stopwatch();
+            writeStopwatch.Start();
+            using (var file = new StreamWriter(filePath, true))
+            {
+                file.WriteLine(headers);
+                file.Write(dataString);
+            }
+            writeStopwatch.Stop();
+            TimeSpan writeTs = writeStopwatch.Elapsed;
+            string writeElapsedTime = String.Format("{0:00}:{1:0000}",
+                writeTs.Seconds, writeTs.Milliseconds);
+            Debug.Log(LogStore.Label + " logs write to file in " + writeElapsedTime);
+        }).Start();
     }
 
     public void WriteHeaders()

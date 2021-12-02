@@ -6,11 +6,6 @@ using System;
 using System.Globalization;
 using System.Linq;
 
-public enum LogMode {
-    Append,
-    Overwrite
-}
-
 public class LoggingManager : MonoBehaviour
 {
     // sampleLog[COLUMN NAME][COLUMN NO.] = [OBJECT] (fx a float, int, string, bool)
@@ -77,13 +72,8 @@ public class LoggingManager : MonoBehaviour
 
  
     public void NewFilestamp() {
-       // filestamp = GetTimeStamp().Replace('/', '-').Replace(":", "-");
-
-        if (CreateMetaCollection) {
-            GenerateUIDs();
-            Log("Meta", "SessionID", sessionID, LogMode.Overwrite);
-            Log("Meta", "DeviceID", deviceID, LogMode.Overwrite);
-        }
+        // filestamp = GetTimeStamp().Replace('/', '-').Replace(":", "-");
+        GenerateUIDs();
     }
 
     public void SaveLog(string collectionLabel) {
@@ -112,19 +102,20 @@ public class LoggingManager : MonoBehaviour
 
     public void CreateLog(string collectionLabel)
     {
-        LogStore logStore = new LogStore(collectionLabel, email, sessionID, logStringOverTime);
-        logsList.Add(collectionLabel, logStore);
-        if (CreateMetaCollection)
+        if (collectionLabel == "Meta")
         {
-            LogStore metaLog = logStore.CreateAssociatedMetaLog();
-            logsList.Add("Meta",metaLog);
+            LogStore metaLog = new LogStore(collectionLabel, email, sessionID, logStringOverTime, LogType.Meta, false);
+            logsList.Add(collectionLabel,metaLog);
             metaLog.Add("SessionID", sessionID);
             metaLog.Add("DeviceID", deviceID);
+            return;
         }
+        LogStore logStore = new LogStore(collectionLabel, email, sessionID, logStringOverTime);
+        logsList.Add(collectionLabel, logStore);
     }
 
 
-    public void Log(string collectionLabel, Dictionary<string, object> logData, LogMode logMode=LogMode.Append) {
+    public void Log(string collectionLabel, Dictionary<string, object> logData) {
         if (!logsList.ContainsKey(collectionLabel)) {
             logsList.Add(collectionLabel, new LogStore(collectionLabel, email,sessionID,logStringOverTime));
         }
@@ -134,18 +125,20 @@ public class LoggingManager : MonoBehaviour
         foreach (KeyValuePair<string, object> pair in logData) {
             logStore.Add(pair.Key,pair.Value);
         }
-        logStore.TerminateRow();
-
     }
 
-    public void Log(string collectionLabel, string columnLabel, object value, LogMode logMode = LogMode.Append) {
+    public void TerminateLogRow(string collectionLabel)
+    {
+        logsList[collectionLabel].TerminateRow();
+    }
+
+    public void Log(string collectionLabel, string columnLabel, object value) {
         if (!logsList.ContainsKey(collectionLabel))
         {
             logsList.Add(collectionLabel, new LogStore(collectionLabel, email, sessionID, logStringOverTime));
         }
         LogStore logStore = logsList[collectionLabel];
         logStore.Add(columnLabel, value);
-        logStore.TerminateRow();
     }
 
     public void ClearAllLogs() {

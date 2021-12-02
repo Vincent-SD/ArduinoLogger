@@ -58,11 +58,6 @@ public class LogToDisk : MonoBehaviour
 
     public void Log(Dictionary<string, List<string>> logCollection)
     {
-
-        //if (string.IsNullOrEmpty(filepath))
-        //{
-        //    Debug.LogError("Filepath was not set!");
-        //}
         arduinoObject.LoggingManager.SaveLog(arduinoObject.GetOutputLabel());
         arduinoObject.LoggingManager.SaveLog("Meta");
         Debug.Log("Data logged to: " + filepath);
@@ -76,7 +71,6 @@ public class LogToDisk : MonoBehaviour
     {
 		SendingDoneButtonText.text = "Save Logs to CSV";
         SendingDoneButtonText.color = Color.black;
-        
     }
 }
 

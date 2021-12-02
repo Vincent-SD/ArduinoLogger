@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Boo.Lang.Runtime;
 using UnityEngine;
@@ -15,7 +16,7 @@ public enum LogType
 public class LogStore : MonoBehaviour
 {
 
-    private Dictionary<string, List<string>> logs;
+    private SortedDictionary<string, List<string>> logs;
     private StringBuilder logString;
     public string Label { get; set; }
 
@@ -25,6 +26,7 @@ public class LogStore : MonoBehaviour
     private int nbLines;
     private bool createStringOverTime;
     private StringBuilder currentLineLogged;
+    private SortedDictionary<string, string> currentLogs;
     private const string fieldSeparator = ";";
     private const string lineSeperator = "\n";
     private string email;
@@ -47,9 +49,10 @@ public class LogStore : MonoBehaviour
         LogType logType, bool logCommonColumns)
     {
         this.Label = label;
-        logs = new Dictionary<string, List<string>>();
+        logs = new SortedDictionary<string, List<string>>();
         logString = new StringBuilder();
         currentLineLogged = new StringBuilder();
+        currentLogs = new SortedDictionary<string, string>();
         this.createStringOverTime = createStringOverTime;
         this.email = email;
         SessionId = sessionID;
@@ -72,25 +75,44 @@ public class LogStore : MonoBehaviour
 
     public void Add(string column, object data)
     {
-  
-        string dataStr = ConvertToString(data);
-        if (logs.TryGetValue(column, out List<string> list))
+        if (nbLines > 0 && !logs.Keys.Contains(column))
         {
-            list.Add(dataStr);
-        }
-        else
-        { 
-            logs.Add(column, new List<string>());
-            logs[column].Add(dataStr);
+            logs.Add(column,new List<string>(Enumerable.Repeat("NULL", nbLines).ToList()));
+            if (createStringOverTime)
+            {
+                Debug.LogError("Header " + column + " added durring logging process...\n" +
+                               "aborting logging datastring on the fly");
+                createStringOverTime = false;
+                logString.Clear();
+            }
         }
 
-        if (createStringOverTime)
+        if (currentLogs.ContainsKey(column))
         {
-            if (currentLineLogged.Length != 0)
-            {
-                currentLineLogged.Append(fieldSeparator);
-            }
-            currentLineLogged.Append(dataStr);
+            TerminateRow();
+        }
+        string dataStr = ConvertToString(data);
+        AddToDictIfNotExists(currentLogs,column,dataStr);
+    }
+
+    private void CreateOrAddToLogsDict(IDictionary<string, List<string>> dictionary, string key, string value)
+    {
+        if (dictionary.TryGetValue(key, out List<string> list))
+        {
+            list.Add(value);
+        }
+        else
+        {
+            dictionary.Add(key, new List<string>());
+            dictionary[key].Add(value);
+        }
+    }
+
+    private void AddToDictIfNotExists(IDictionary<string, string> dictionary, string key, string value)
+    {
+        if (!dictionary.ContainsKey(key))
+        {
+            dictionary.Add(key,value);
         }
     }
 
@@ -98,66 +120,51 @@ public class LogStore : MonoBehaviour
     {
         string timeStamp = GetTimeStamp();
         string frameCount = GetFrameCount();
-        if (logs.TryGetValue("Timestamp", out List<string> list1))
+        if (logType == LogType.Normal && logCommonColumns)
         {
-            list1.Add(timeStamp);
+            AddToDictIfNotExists(currentLogs, "Timestamp", timeStamp);
+            AddToDictIfNotExists(currentLogs, "Framecount", frameCount);
+            AddToDictIfNotExists(currentLogs, "SessionID", SessionId);
+            AddToDictIfNotExists(currentLogs, "Email", email);
         }
-        else
+        else if (logType == LogType.Meta)
         {
-            logs.Add("Timestamp", new List<string>());
-            logs["Timestamp"].Add(timeStamp);
-        }
-
-        if (logs.TryGetValue("Framecount", out List<string> list2))
-        {
-            list2.Add(frameCount);
-        }
-        else
-        {
-            logs.Add("Framecount", new List<string>());
-            logs["Framecount"].Add(frameCount);
-        }
-
-        if (logs.TryGetValue("SessionID", out List<string> list3))
-        {
-            list3.Add(SessionId);
-        }
-        else
-        {
-            logs.Add("SessionID", new List<string>());
-            logs["SessionID"].Add(SessionId);
-        }
-
-        if (logs.TryGetValue("Email", out List<string> list4))
-        {
-            list4.Add(email);
-        }
-        else
-        {
-            logs.Add("Email", new List<string>());
-            logs["Email"].Add(email);
-        }
-
-        if (createStringOverTime)
-        {
-            if (logType == LogType.Normal && logCommonColumns)
-            {
-                currentLineLogged.Insert(0, timeStamp + fieldSeparator + frameCount +
-                                            fieldSeparator + SessionId + fieldSeparator + email + fieldSeparator);
-            }
-            else if (logType == LogType.Meta)
-            {
-                currentLineLogged.Insert(0, SessionId + fieldSeparator + email + fieldSeparator);
-            }
+            Debug.Log("************META : " + Label);
+            AddToDictIfNotExists(currentLogs, "SessionID", SessionId);
+            AddToDictIfNotExists(currentLogs, "Email", email);
         }
     }
 
     public void TerminateRow()
     {
         AddCommonColumns();
-        currentLineLogged.Append(lineSeperator);
-        logString.Append(currentLineLogged);
-        currentLineLogged.Clear();
+        foreach (var logsKey in logs.Keys)
+        {
+            if (!currentLogs.ContainsKey(logsKey))
+            {
+                currentLogs.Add(logsKey,"NULL");
+            }
+        }
+        foreach (var pair in currentLogs)
+        {
+            CreateOrAddToLogsDict(logs,pair.Key,pair.Value);
+            if (createStringOverTime)
+            {
+                if (currentLineLogged.Length != 0)
+                {
+                    currentLineLogged.Append(fieldSeparator);
+                }
+                currentLineLogged.Append(pair.Value);
+            }
+        }
+        
+        if (createStringOverTime)
+        {
+            currentLineLogged.Append(lineSeperator);
+            logString.Append(currentLineLogged);
+            currentLineLogged.Clear();
+        }
+        currentLogs.Clear();
         nbLines++;
     }
 
@@ -165,6 +172,7 @@ public class LogStore : MonoBehaviour
     public void Clear()
     {
         logs.Clear();
+        currentLogs.Clear();
         logString.Clear();
         nbLines = 0;
     }
@@ -172,6 +180,10 @@ public class LogStore : MonoBehaviour
 
     public T ExportAll<T>()
     {
+        if (currentLogs.Count != 0)
+        {
+            TerminateRow();
+        }
         var type = typeof(T);
         if (type == typeof(Dictionary<string, string>))
         {

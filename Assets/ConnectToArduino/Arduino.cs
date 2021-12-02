@@ -248,13 +248,14 @@ public class Arduino : MonoBehaviour {
                 //    headersList.Add(header);
                 //}
                 LoggingManager.DeleteAllLogs();
+                LoggingManager.SetEmail(email);
                 LoggingManager.CreateLog(outputLabel);
                 LoggingManager.Log("Meta", new Dictionary<string, object>()
                 {
-                    {"Email", email},
                     {"PID", pid},
                     {"Comment", Comment},
                 });
+                //LoggingManager.TerminateLogRow("Meta");
                 receiverState = ReceiverState.ReadingData;
             } else {
                 // Otherwise error out and go to Standby Mode.
@@ -289,6 +290,7 @@ public class Arduino : MonoBehaviour {
                         currentLogs.Add(header,sanitizedValue);
                     }
                     LoggingManager.Log(outputLabel, currentLogs);
+                    // LoggingManager.TerminateLogRow(outputLabel);
                     //When ever new data arrives, the scripts fires an event to any scripts that are subscribed, to let them know there is new data available (e.g. my Arduino Logger script).
                     if (NewDataEvent != null) {   //Check that someone is actually subscribed to the event
                         NewDataEvent(logCollection);     //Fire the event in case someone is subscribed
